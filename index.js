@@ -41,4 +41,4 @@ const routes = require("./routes/v1");
 app.use("/v1", routes);
 
 
-app.listen(process.env.PORT);
+app.listen(process.env.PORT, ()=>console.log("Listening on",process.env.PORT));
