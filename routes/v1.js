@@ -11,7 +11,7 @@ const fetch = require("node-fetch");
  * @summary Begin a replay from a time, to a time
  * @param {ISO-Timestamp} from - The start timestamp of the updates to replay.
  * @param {integer} interval - How long to take between each message in ms. Default: 3000 
- * @returns {text/event-stream} 200 - A series of server sent events, When updates end, the server will send an event with the data `close` to indicate the event stream should be closed. No more events will be sent after this.
+ * @returns {text/event-stream} 200 - A series of server sent events, When updates end, the server will send an event with the data `end` to indicate the event stream should be closed. No more events will be sent after this.
  */
 router.get("/replay",async (req, res)=>{
     if(!req.query.from) {
