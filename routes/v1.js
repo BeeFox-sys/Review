@@ -30,7 +30,7 @@ router.get("/replay",async (req, res)=>{
 
     let data = await fetch("https://api.sibr.dev/chronicler/v1/stream/updates?limit=100&after="+fromDate.toISOString()).then(async data=>data.json());
 
-    data = data.data.map(data=>data.data).reverse();
+    data = data.data.map(data=>data.data)
 
     console.log("Starting stream");
     
