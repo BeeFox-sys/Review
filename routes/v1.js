@@ -3,14 +3,15 @@ const router = new Router();
 const fetch = require("node-fetch");
 
 /**
- * 
+ *
  * Sends game updates between two timestamps as server sent events. The replayer will replay a maximum of 100 updates before closing the stream.
- * 
+ *
  * @route GET /replay
  * @group Game Updates
  * @summary Begin a replay from a time, to a time
  * @param {ISO-Timestamp} from - The start timestamp of the updates to replay.
- * @param {integer} interval - How long to take between each message in ms. Default: 3000 
+ * @param {integer} interval - How long to take between each message in ms. Default: 3000
+ * @param {integer} count - How many messages to send before ending the stream. Default: 100
  * @returns {text/event-stream} 200 - A series of server sent events, When updates end, the server will send an event with the data `end` to indicate the event stream should be closed. No more events will be sent after this.
  */
 router.get("/replay",async (req, res)=>{
@@ -28,12 +29,14 @@ router.get("/replay",async (req, res)=>{
         return;
     }
 
-    let data = await fetch("https://api.sibr.dev/chronicler/v1/stream/updates?limit=100&after="+fromDate.toISOString()).then(async data=>data.json());
+    let count = parseInt(req.query.count) || 100;
+
+    let data = await fetch("https://api.sibr.dev/chronicler/v1/stream/updates?count="+count+"&after="+fromDate.toISOString()).then(async data=>data.json());
 
     data = data.data.map(data=>data.data)
 
     console.log("Starting stream");
-    
+
     const headers = {
         "Content-Type": "text/event-stream",
         "Cache-Control": "no-cache",
@@ -48,7 +51,7 @@ router.get("/replay",async (req, res)=>{
 
     let i=0;
     let stream = setInterval((res)=>{
-        if(sent >= 100){
+        if(sent >= count){
             res.status(204);
             res.write("data: end\n\n");
             return clearInterval(stream);
