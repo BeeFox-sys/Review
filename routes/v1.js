@@ -3,9 +3,9 @@ const router = new Router();
 const fetch = require("node-fetch");
 
 /**
- *
- * Sends game updates between two timestamps as server sent events. The replayer will replay a maximum of 100 updates before closing the stream.
- *
+ * 
+ * Sends game updates between two timestamps as server sent events. The replayer will replay from a set time until the current point, or 100,000 events, which ever comes first.
+ * 
  * @route GET /replay
  * @group Game Updates
  * @summary Begin a replay from a time, to a time
@@ -29,11 +29,10 @@ router.get("/replay",async (req, res)=>{
         return;
     }
 
-    let count = parseInt(req.query.count) || 100;
+    let nextdata = await fetch("https://api.sibr.dev/chronicler/v1/stream/updates?order=0&limit=100&after="+fromDate.toISOString()).then(async data=>data.json());
 
-    let data = await fetch("https://api.sibr.dev/chronicler/v1/stream/updates?count="+count+"&after="+fromDate.toISOString()).then(async data=>data.json());
-
-    data = data.data.map(data=>data.data)
+    let nextPage = nextdata.nextPage;
+    let data = nextdata.data.map(data=>data.data);
 
     console.log("Starting stream");
 
@@ -50,16 +49,32 @@ router.get("/replay",async (req, res)=>{
     let sent = 0;
 
     let i=0;
-    let stream = setInterval((res)=>{
-        if(sent >= count){
+    let loading = false;
+    let stream = setInterval(async (res)=>{
+        if(loading) return;
+        if(sent >= 100000 || data[i]==undefined){
             res.status(204);
             res.write("data: end\n\n");
             return clearInterval(stream);
         }
-        console.log("Sending Event",i,data[i]);
+        // console.log("Sending Event",sent,data[i]);
         res.write("id: " + ++sent + "\n");
         res.write("data:"+JSON.stringify(data[i])+"\n\n");
         i++;
+        if(i>=data.length){
+            if(!nextPage){
+                res.status(204);
+                res.write("data: end\n\n");
+                return clearInterval(stream);
+            }
+            loading=true;
+            nextdata = await fetch("https://api.sibr.dev/chronicler/v1/stream/updates?order=0&page="+nextPage).then(async data=>data.json()).catch(console.error); 
+            nextPage = nextdata.nextPage;
+            data = nextdata.data.map(data=>data.data);
+            i=0;
+            console.log("Loaded Page:", nextPage);
+            loading=false;
+        }
     }, interval, res);
 
     req.on("close",()=>{console.log("Request Closed");clearInterval(stream);});
