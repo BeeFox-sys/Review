@@ -29,10 +29,10 @@ router.get("/replay",async (req, res)=>{
         return;
     }
 
-    let nextdata = await fetch("https://api.sibr.dev/chronicler/v1/stream/updates?order=0&limit=100&after="+fromDate.toISOString()).then(async data=>data.json());
+    let nextdata = await fetch("https://api.sibr.dev/chronicler/v2/versions?type=Stream&order=asc&count=100&after="+fromDate.toISOString()).then(async data=>data.json());
 
     let nextPage = nextdata.nextPage;
-    let data = nextdata.data.map(data=>data.data);
+    let data = nextdata.items.map(data=>data.data);
 
     console.log("Starting stream");
 
@@ -68,9 +68,9 @@ router.get("/replay",async (req, res)=>{
                 return clearInterval(stream);
             }
             loading=true;
-            nextdata = await fetch("https://api.sibr.dev/chronicler/v1/stream/updates?order=0&page="+nextPage).then(async data=>data.json()).catch(console.error); 
+            nextdata = await fetch("https://api.sibr.dev/chronicler/v2/versions?type=Stream&order=asc&count=1000&page="+nextPage).then(async data=>data.json()).catch(console.error); 
             nextPage = nextdata.nextPage;
-            data = nextdata.data.map(data=>data.data);
+            data = nextdata.items.map(data=>data.data);
             i=0;
             console.log("Loaded Page:", nextPage);
             loading=false;
